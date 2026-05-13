@@ -154,7 +154,11 @@ namespace RustAudio
             Debug.Log("RustAudioSource new");
 
             cancellationTokenSource = new CancellationTokenSource();
-            new Thread(Capture).Start();
+            // IsBackground = true so the thread doesn't keep the process alive on shutdown.
+            // The Capture loop sits in a blocking native call (rust_audio_input_stream_consume_frame)
+            // and will only observe cancellationTokenSource on the next iteration, so on EXIT the
+            // managed runtime would otherwise wait for it to return before terminating the process.
+            new Thread(Capture) { IsBackground = true, Name = "RustAudioCapture" }.Start();
             #if UNITY_EDITOR
             Info.Register(streamId, this);
             #endif
